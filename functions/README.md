@@ -11,4 +11,4 @@ GCP Cloud Functions에 배포될 파일입니다.
 - `FE_CLIENT_ID`: 프론트엔드 OAuth 클라이언트 id
 
 ## Reminders
-- 배포된 functions 이름은 **외부에 공개하지 않습니다.**
+- 배포된 functions 이름은 **`.env`로 관리합니다.**
