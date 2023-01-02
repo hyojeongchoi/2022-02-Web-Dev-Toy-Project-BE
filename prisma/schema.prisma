@@ -1,0 +1,21 @@
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+model Users {
+    userId           BigInt    @id @default(autoincrement())
+    nickname         String?   @db.VarChar(10)
+    name             String?   @db.VarChar(10)
+    studentId        String?   @db.VarChar(10)
+    department       String?   @db.VarChar(20)
+    status           String    @db.VarChar(10)
+    googleEmail      String?   @db.VarChar(50)
+    googleNickname   String?   @db.VarChar(50)
+    profileImagePath String?   @db.VarChar(200)
+}
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["extendedWhereUnique"]
+}
