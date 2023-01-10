@@ -244,6 +244,59 @@ app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
 
+// GCP Storage 파일 삭제하는 함수 -> 삭제 딜레이 2-30분 있는지 확인하기
+async function deleteFile(image) {
+  if (image != null) {
+    const fileNameWithPath = image.split(`https://storage.googleapis.com/${bucket.name}/`)[1];
+    await storage.bucket(bucket.name).file(fileNameWithPath).delete();
+    console.log(`gs://${bucket.name}/${fileNameWithPath} deleted`);
+  }
+}
+
+// prisma에 업데이트하는 함수
+async function prismaUpdate(postId, req, res){
+  const json = JSON.parse(req.body.json);
+  if(req.image == undefined)
+  {
+    req.image = null;
+  }
+
+  try {
+    const userId = Number(req.user.id)
+    const title = json.title
+    const content = json.content
+    const place = json.place
+    const status = json.status
+    const image = req.image
+    const postRes = await prisma.posts.findUnique({
+      where: {
+        postId: postId
+      }
+    });
+    if (postRes.userId == userId) { // 게시글 작성자인지 확인
+      await prisma.posts.update({
+        where: {
+          postId: postId,
+        },
+        data: {
+          title: title,
+          content: content,
+          imagePath: image,
+          place: place,
+          status: status
+        }
+      });
+      res.send({message: 'Updated Successfully.'})
+    }
+    else {
+      res.status(403).send({error: 'Authentication fail.'})
+    }
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({error:'Server Error.'});
+  }
+}
 
 // TypeError: Do not know how to serialize a BigInt 해결코드
 // 필수 코드인지는 별도 확인 필요
@@ -289,6 +342,30 @@ app.get('/post/:id', async (req, res) => {
   }
 });
 
+//게시글 수정 API
+app.put('/post/:id', authenticateAccessToken, multer.single('file'), uploadImage, async(req, res) => {
+  try {
+    const postId = Number(req.params.id)
+    const post = await prisma.posts.findUnique({
+      where: {
+        postId: postId
+      }
+    });
+    const beforeImg = post.imagePath;
+
+    // 게시글 수정
+    prismaUpdate(postId, req, res);
+    // 이미지 교체 OR 삭제
+    if ((req.file == undefined) == (req.image == null)) {
+        deleteFile(beforeImg);
+    }
+    res.send({message:'Updated Successfully.'})
+  }
+  catch(err) {
+    console.error(err);
+    res.status(500).send({error: 'Server Error.'});
+  }
+})
 
 //게시글 삭제 API
 app.delete('/post/:id', authenticateAccessToken, async(req, res) => {
