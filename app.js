@@ -161,6 +161,52 @@ app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
 
+
+// TypeError: Do not know how to serialize a BigInt 해결코드
+// 필수 코드인지는 별도 확인 필요
+BigInt.prototype.toJSON = function() {       
+  return this.toString()
+}
+
+//게시글 목록 조회 api
+app.get('/post', async (req, res) => {
+  try {
+    const postList = await prisma.posts.findMany({
+      select: {
+        postId : true,
+        title : true,
+        publishDate : true,
+        status : true
+      }
+    });
+    res.send(postList)
+  }
+  catch(error){
+    console.error(error);
+    res.status(500).send({error: 'Server Error.'});
+  }
+});
+
+
+//게시글 상세페이지 조회 API
+app.get('/post/:id', async (req, res) => {
+  try{
+    const postId = Number(req.params.id)    
+
+    const detail = await prisma.posts.findUnique({
+      where: {
+        postId : postId
+      }
+    });
+    res.send(detail);
+  }
+  catch(error){
+    console.error(error);
+    res.status(500).send({error: 'Server Error.'});
+  }
+});
+
+
 //게시글 삭제 API
 app.delete('/post/:id', authenticateAccessToken, async(req, res) => {
   try {
