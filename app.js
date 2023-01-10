@@ -160,3 +160,32 @@ app.post('/auth/user/register', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
+//게시글 삭제 API
+app.delete('/post/:id', authenticateAccessToken, async(req, res) => {
+  try {
+    const postId = Number(req.params.id)
+    const userId = req.user.id
+    const postRes = await prisma.posts.findUnique({
+      where:{
+        postId: postId,
+      }
+    })
+    
+    if (postRes.userId == userId) { //게시글 작성자인지 확인 
+      await prisma.posts.delete({
+          where: {
+              postId: postId,
+          }
+      });
+      res.send({message: 'Deleted Successfully.'})
+    }
+    else {
+      res.status(403).send({error: 'Authentication fail.'})
+    }
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({error:'Server Error.'});
+  }
+})
