@@ -13,7 +13,31 @@ model Users {
     googleEmail      String?   @db.VarChar(50)
     googleNickname   String?   @db.VarChar(50)
     profileImagePath String?   @db.VarChar(200)
+    comment          Comment[]
 }
+
+model Posts {
+    postId           BigInt    @unique @default(autoincrement())
+    userId           BigInt    
+    title            String?   @db.VarChar(200)
+    content          String    @db.VarChar(500)
+    imagePath        String?   @db.VarChar(200)
+    publishDate      DateTime  @default(now())
+    place            String    @db.VarChar(100)
+    status           String    @db.VarChar(20)
+    comment          Comment[]
+}
+
+model Comment {
+  commentId          BigInt    @id @default(autoincrement())
+  user               Users?    @relation(fields: [userId], references: [userId])
+  userId             BigInt?
+  post               Posts?    @relation(fields: [postId], references: [postId])
+  postId             BigInt?
+  content            String?   @db.VarChar(500)
+  commentDate        DateTime  @default(now())
+}
+
 
 generator client {
   provider = "prisma-client-js"
