@@ -1,4 +1,6 @@
 const express = require('express');
+const redis = require('redis');
+const jwt = require('jsonwebtoken');
 const app = express();
 app.use(express.json());
 
@@ -9,6 +11,37 @@ const prisma = new PrismaClient()
 
 const {OAuth2Client} = require('google-auth-library');
 const client = new OAuth2Client(process.env.BE_CLIENT_ID, process.env.BE_CLIENT_SECRET);
+
+//////////////////////////////// REDIS //////////////////////////////////
+
+// Redis 연결
+const redisClient = redis.createClient({
+  url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
+  password: process.env.REDIS_PASSWORD,
+  legacyMode: false, // Promise
+});
+redisClient.on('connect', () => {
+  console.info('Redis connected!');
+});
+redisClient.on('error', (err) => {
+  console.error('Redis Client Error', err);
+});
+redisClient.connect();
+
+
+// 로그아웃 API
+app.post('/auth/user/logout', authenticateAccessToken, async (req, res) => {
+  // body로 받은 accessToken을 redis에서 찾아 해당 key-value 쌍 삭제
+  // 기획 간소화로 refresh token 사용 X
+  try {
+    redisClient.del(`${req.body.accessToken}`);
+  }
+  catch (err) {
+    console.error(err);
+    res.status(500).send({ error: 'Server Error.' });
+  }
+  res.send({ message: 'Signed Out Successfully.' });
+});
 
 // 로그인 API
 app.post('/auth/user/login', async (req, res) => {
@@ -156,6 +189,56 @@ app.post('/auth/user/register', async (req, res) => {
   }
     
 });
+
+////////////////// accessToken 유효성 검사 ///////////////////////////
+function authenticateAccessToken(req, res, next) {
+  const authHeader = req.headers['authorization']
+  console.log("authHeader:", authHeader)
+  const token = authHeader && authHeader.split('Bearer ')[1]
+  if (token == null) return res.status(401).send({ error: 'Invalid Request.' })
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, user) => {
+    if (err) return res.status(400).send({ error: 'Bad Request.' })
+
+    // redis 세션 검사
+    // 1. token에서 user 파싱하고 userId 알아내기 (1 -> payload)
+    var base64Payload = token.split('.')[1];
+    var payload = Buffer.from(base64Payload, 'base64');
+    var userId = JSON.parse(payload.toString()).id;
+
+    // 2. redis에서 token을 찾고 대응되는 userId가 파싱해서 나온 userId와 같으면 로그인 상태 맞음
+    var storedUserId = await redisClient.get(token);
+    console.log(userId, storedUserId)
+    if (userId == storedUserId) {
+      req.token = token;
+      req.user = user;
+      next();
+    }
+    else {
+      // 3. 로그인 상태 아니면 403
+      return res.status(403).send({ error: 'Authentication fail.' });
+    }
+  })
+}
+
+// Access Token 생성 함수
+function generateAccessToken(user) {
+  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+}
+
+// 재발행
+app.post('/token', authenticateAccessToken, (req, res) => {
+  // access token 재발행
+  const accessToken = generateAccessToken({ id: req.user.id })
+  // 이전 redis 세션 삭제
+  redisClient.del(req.body.accessToken);
+  // redis에 새 세션 저장
+  redisClient.set(accessToken, req.user.id.toString(), 'EX', 60 * 60, async () => {
+    console.log('Redis: { ' + accessToken + ', ' + req.user.id + ' } 저장 완료')
+  })
+  // FE에 새로 발급한 token 돌려주기
+  res.send({ accessToken: accessToken });
+})
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
