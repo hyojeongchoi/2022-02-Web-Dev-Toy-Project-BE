@@ -142,3 +142,6 @@ dist
 .svelte-kit
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+
+# secret folder (NEVER GIT PUSH THIS)
+secrets/
