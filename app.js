@@ -376,6 +376,39 @@ async function prismaUpdate(postId, req, res){
   }
 }
 
+
+//////////////////////// Post //////////////////////////
+//게시글 작성 api
+app.post('/post', authenticateAccessToken, multer.single('file'), uploadImage, async (req, res) => {
+  try{
+    const json = JSON.parse(req.body.json);
+
+    const userId = Number(req.user.id)
+    const title = json.title
+    const content = json.content
+    const image = req.image
+    // const publishDate = req.body.publishDate // BE에서 처리해야 함
+    const place = json.place
+    const status = json.status
+
+    await prisma.posts.create({
+      data:{
+        userId: userId,
+        title : title, 
+        content : content, 
+        imagePath : image, 
+        // publishDate : publishDate,
+        place : place,
+        status : status
+      },
+    })
+    res.send({message:'Saved Successfully.'})
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({error: 'Server Error.'});
+  }
+});
+
 // TypeError: Do not know how to serialize a BigInt 해결코드
 // 필수 코드인지는 별도 확인 필요
 BigInt.prototype.toJSON = function() {       
