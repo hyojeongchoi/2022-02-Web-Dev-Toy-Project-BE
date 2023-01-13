@@ -14,16 +14,19 @@ const bucket = storage.bucket(process.env.GCP_STORAGE_BUCKET); // dotenv 필요
 
 const { v4: uuidv4 } = require('uuid');
 
-const app = express();
-app.use(express.json());
-
-const PORT = 8081
-
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
 const {OAuth2Client} = require('google-auth-library');
 const client = new OAuth2Client(process.env.BE_CLIENT_ID, process.env.BE_CLIENT_SECRET);
+
+const app = express();
+app.use(express.json());
+
+const PORT = 8081
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
 
 // Multer
 const multer = Multer({
@@ -92,10 +95,14 @@ app.post('/auth/user/logout', authenticateAccessToken, async (req, res) => {
   res.send({ message: 'Signed Out Successfully.' });
 });
 
+
+//////////////////////////// Login/Logout //////////////////////////////////
+
 // 로그인 API
 app.post('/auth/user/login', async (req, res) => {
   let name = ""
   let email = ""
+  let picture = ""
 
   // 구글 credential 인증
   try {
@@ -120,10 +127,11 @@ app.post('/auth/user/login', async (req, res) => {
     return;
   }
 
-  responseContent = {}
+  let user = {};
+  let responseContent = {};
   try {
     // 서비스 사용자 여부 확인
-    const user = await prisma.users.findFirst({
+    user = await prisma.users.findFirst({
       where: {
         googleEmail: email,
       }
@@ -132,20 +140,18 @@ app.post('/auth/user/login', async (req, res) => {
     if (user == null) { // 비회원
       const status = '로그인완료'
       // DB 저장
-      await prisma.users.create({
+      user = await prisma.users.create({
         data: {
             googleEmail: email,
             googleNickname: name,
             profileImagePath: picture,
             status: status
-        },
+        }
       })
-
-      // 로그인 세션 생성
-
-      // access token(미구현), status 반환
+      
+      // status 반환
       responseContent = {status: status}
-      // (추후 FE에서 가입 폼 작성 후 /auth/user/register에 접근)
+      // 추후 FE에서 가입 폼 작성 후 /auth/user/register에 접근
     }
     else { // 로그인완료 or 가입완료 회원
       // DB 업데이트
@@ -158,8 +164,6 @@ app.post('/auth/user/login', async (req, res) => {
         }
       })
 
-      // 로그인 세션 생성
-
       if (user.status == "로그인완료") {
         responseContent = {status: user.status}
       }
@@ -170,6 +174,18 @@ app.post('/auth/user/login', async (req, res) => {
         }
       }
     }
+
+    // accessToken 발급
+    const userInfo = {id: user.userId};
+    const accessToken = generateAccessToken(userInfo);
+    responseContent['accessToken'] = accessToken;
+
+    // redis 로그인 세션 생성
+    // https://redis.io/commands/set/ 참고
+    redisClient.set(accessToken, user.userId.toString(), 'EX', 60 * 60 , async () => {
+      console.log('Redis: { ' + accessToken + ', ' + user.userId + ' } 저장 완료')
+    })
+
   } catch (err) {
     console.error(err);
     res.status(500).send({error: 'Server Error.'});
@@ -184,24 +200,12 @@ app.post('/auth/user/login', async (req, res) => {
 });
 
 // 회원가입
-app.post('/auth/user/register', async (req, res) => {
-  const accessToken = req.body.accessToken
-  let email = ""
-  email = req.body.googleEmail // 이메일 (다음 수정시 삭제)
-  try {
-    // email = JwtUtil.validate(accessToken)
-
-    // 세션 확인
-
-  } catch (err) {
-    res.status(403).send({error: 'Invalid Request.'});
-    return;
-  }
+app.post('/auth/user/register', authenticateAccessToken, async (req, res) => {
 
   // 서비스 사용자 여부 확인
-  const user = await prisma.users.findFirst({
+  const user = await prisma.users.findUnique({
     where: {
-      googleEmail: email,
+      userId: req.user.id,
     }
   })
 
@@ -214,14 +218,14 @@ app.post('/auth/user/register', async (req, res) => {
   try {
     await prisma.users.updateMany({
       where: {
-        googleEmail: email
+        userId: req.user.id
       },
       data: {
-          nickname: nickname,
-          name: name,
-          studentId: studentId,
-          department: department,
-          status: '가입완료'
+        nickname: nickname,
+        name: name,
+        studentId: studentId,
+        department: department,
+        status: '가입완료'
       },
     })
     res.send({
@@ -254,7 +258,7 @@ function authenticateAccessToken(req, res, next) {
     var base64Payload = token.split('.')[1];
     var payload = Buffer.from(base64Payload, 'base64');
     var userId = JSON.parse(payload.toString()).id;
-
+    
     // 2. redis에서 token을 찾고 대응되는 userId가 파싱해서 나온 userId와 같으면 로그인 상태 맞음
     var storedUserId = await redisClient.get(token);
     console.log(userId, storedUserId)
