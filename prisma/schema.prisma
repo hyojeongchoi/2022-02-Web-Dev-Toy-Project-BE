@@ -25,6 +25,7 @@ model Posts {
     publishDate      DateTime  @default(now())
     place            String    @db.VarChar(100)
     status           String    @db.VarChar(20)
+    tag              String    @db.VarChar(100)
     comment          Comment[]
 }
 
