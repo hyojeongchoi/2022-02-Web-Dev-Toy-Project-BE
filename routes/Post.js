@@ -22,16 +22,18 @@ router.post('/', authenticateAccessToken, multer.single('file'), uploadImage, as
     // const publishDate = req.body.publishDate // BE에서 처리해야 함
     const place = json.place
     const status = json.status
+    const tag = json.tag
 
     await prisma.posts.create({
       data:{
         userId: userId,
-        title : title, 
-        content : content, 
-        imagePath : image, 
+        title: title, 
+        content: content, 
+        imagePath: image, 
         // publishDate : publishDate,
-        place : place,
-        status : status
+        place: place,
+        status: status,
+        tag: tag
       },
     })
     res.send({message:'Saved Successfully.'})
@@ -52,10 +54,11 @@ router.get('/', async (req, res) => {
   try {
     const postList = await prisma.posts.findMany({
       select: {
-        postId : true,
-        title : true,
-        publishDate : true,
-        status : true
+        postId: true,
+        title: true,
+        publishDate: true,
+        status: true,
+        tag: true
       }
     });
     res.send(postList)
@@ -153,6 +156,7 @@ async function prismaUpdate(postId, req, res){
     const place = json.place
     const status = json.status
     const image = req.image
+    const tag = json.tag
     const postRes = await prisma.posts.findUnique({
       where: {
         postId: postId
@@ -168,7 +172,8 @@ async function prismaUpdate(postId, req, res){
           content: content,
           imagePath: image,
           place: place,
-          status: status
+          status: status,
+          tag: tag
         }
       });
       res.send({ message: 'Updated Successfully.' })
