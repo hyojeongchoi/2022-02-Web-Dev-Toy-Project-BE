@@ -63,6 +63,12 @@ app.put("/nickname", authenticateAccessToken, async (req, res) => {
     const userId = req.user.id;
     const newNickname = req.body.newNickname;
 
+    // 유효성 검사
+    if (!isValid(newNickname)) {
+      res.status(400).send({ error: "Invalid Input" });
+      throw new Error("Invalid Input");
+    }
+
     // DB 업데이트
     await prisma.users.update({
       where: {
@@ -92,3 +98,19 @@ app.put("/nickname", authenticateAccessToken, async (req, res) => {
     res.status(500).send({ errer: "Server Error." });
   }
 });
+
+// 닉네임 유효성 검사 (공백, 길이)
+function isValid(newNickname) {
+  // 공백 검사
+  const blank_pattern = /^\s+|\s+$/g;
+  if (newNickname.replace(blank_pattern, "") == "") {
+    return false;
+  }
+
+  // 길이 검사 (3 초과, 10 이하)
+  if (!newNickname || newNickname.length < 3 || newNickname.length > 10) {
+    return false;
+  }
+
+  return true;
+}
