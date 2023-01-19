@@ -3,6 +3,11 @@ const router = express.Router();
 
 const { authenticateAccessToken } = require("../middlewares/Auth");
 
+//TypeError: Do not know how to serialize a BigInt 해결코드
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
+
 // [마이페이지] 게시글 조회 (최근 작성 순)
 router.get("/post", authenticateAccessToken, async (req, res) => {
   try {
