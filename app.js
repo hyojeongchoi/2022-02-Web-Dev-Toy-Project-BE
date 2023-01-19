@@ -13,10 +13,12 @@ redisClient.connect();
 const Auth = require('./routes/Auth');
 const Post = require('./routes/Post');
 const Comment = require('./routes/Comment');
+const Alarm = require('./routes/Alarm');
 
 app.use("/auth/user", Auth);
 app.use("/post", Post);
 app.use("/:id/comment", Comment);
+app.use("/alarm", Alarm);
 
 const PORT = 8081;
 app.listen(PORT, () => {
