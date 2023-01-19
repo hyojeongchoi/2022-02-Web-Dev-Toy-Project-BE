@@ -10,6 +10,7 @@ model Users {
   studentId        String?   @db.VarChar(10)
   department       String?   @db.VarChar(20)
   status           String    @db.VarChar(10)
+  schoolEmail      String?   @db.VarChar(50)
   googleEmail      String?   @db.VarChar(50)
   googleNickname   String?   @db.VarChar(50)
   profileImagePath String?   @db.VarChar(200)
