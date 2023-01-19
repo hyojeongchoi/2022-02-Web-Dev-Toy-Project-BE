@@ -56,3 +56,39 @@ app.get("/comment", authenticateAccessToken, async (req, res) => {
     res.status(500).send({ errer: "Server Error." });
   }
 });
+
+// [마이페이지] 닉네임 수정
+app.put("/nickname", authenticateAccessToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const newNickname = req.body.newNickname;
+
+    // DB 업데이트
+    await prisma.users.update({
+      where: {
+        userId: userId,
+      },
+      data: {
+        nickname: newNickname,
+      },
+    });
+
+    // 닉네임 수정 결과
+    const result = await prisma.users.findUnique({
+      where: {
+        userId: userId,
+      },
+      select: {
+        nickname: true,
+      },
+    });
+
+    res.send({
+      data: result,
+      message: "Changed Successfully.",
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ errer: "Server Error." });
+  }
+});
