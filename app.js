@@ -20,7 +20,7 @@ app.use("/auth/user", Auth);
 app.use("/post", Post);
 app.use("/:id/comment", Comment);
 app.use("/alarm", Alarm);
-app.use("./mypage", Mypage);
+app.use("/mypage", Mypage);
 
 const PORT = 8081;
 app.listen(PORT, () => {
