@@ -1,10 +1,10 @@
 const express = require("express");
-const app = express();
+const router = express.Router();
 
 const { authenticateAccessToken } = require("../middlewares/Auth");
 
 // [마이페이지] 게시글 조회 (최근 작성 순)
-app.get("/post", authenticateAccessToken, async (req, res) => {
+router.get("/post", authenticateAccessToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const postList = await prisma.posts.findMany({
@@ -31,7 +31,7 @@ app.get("/post", authenticateAccessToken, async (req, res) => {
 });
 
 // [마이페이지] 댓글 조회 (최근 작성 순)
-app.get("/comment", authenticateAccessToken, async (req, res) => {
+router.get("/comment", authenticateAccessToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const commentList = await prisma.comment.findMany({
@@ -58,7 +58,7 @@ app.get("/comment", authenticateAccessToken, async (req, res) => {
 });
 
 // [마이페이지] 닉네임 수정
-app.put("/nickname", authenticateAccessToken, async (req, res) => {
+router.put("/nickname", authenticateAccessToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const newNickname = req.body.newNickname;
@@ -114,3 +114,5 @@ function isValid(newNickname) {
 
   return true;
 }
+
+module.exports = router;
