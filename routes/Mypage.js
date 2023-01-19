@@ -29,3 +29,30 @@ app.get("/post", authenticateAccessToken, async (req, res) => {
     res.status(500).send({ errer: "Server Error." });
   }
 });
+
+// [마이페이지] 댓글 조회 (최근 작성 순)
+app.get("/comment", authenticateAccessToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const commentList = await prisma.comment.findMany({
+      orderBy: [
+        {
+          commentDate: "desc",
+        },
+      ],
+      where: {
+        userId: userId,
+      },
+      select: {
+        userId: true,
+        content: true,
+        commentDate: true,
+        post: true,
+      },
+    });
+    res.send(commentList);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ errer: "Server Error." });
+  }
+});
