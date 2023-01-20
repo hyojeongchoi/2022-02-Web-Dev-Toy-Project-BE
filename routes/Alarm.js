@@ -15,8 +15,8 @@ BigInt.prototype.toJSON = function () {
 router.post('/setting', authenticateAccessToken, async (req, res) => {
     try {
         const userId = Number(req.user.id);
-        const place = req.body.place;   //배열 자료형으로 받아온 place와 object
-        const object = req.body.object;
+        const place = req.body.place;   //배열 자료형으로 받아온 place와 tag
+        const tag = req.body.tag;
 
         await prisma.users.update({
             where: {
@@ -24,7 +24,7 @@ router.post('/setting', authenticateAccessToken, async (req, res) => {
             },
             data: {
                 place: JSON.stringify(place),
-                object: JSON.stringify(object)    //place와 object를 JSON클래스를 이용해 배열 문자열로 저장
+                tag: JSON.stringify(tag)    //place와 tag를 JSON클래스를 이용해 배열 문자열로 저장
             }
         })
         res.send({ message: 'Saved Successfully.' });
@@ -46,21 +46,21 @@ router.get('/insert', authenticateAccessToken, async (req, res) => {
         });
 
         const placeArr = JSON.parse(user.place);    //배열 자료형으로 변환
-        const objectArr = JSON.parse(user.object);  // ''
+        const tagArr = JSON.parse(user.tag);  // ''
 
-        //posts 테이블에서 placeList 값 또는 objectList 값이 속하는 것 10개
+        //posts 테이블에서 placeList 값 또는 tagList 값이 속하는 것 10개
         const postList = await prisma.posts.findMany({
             select: {
                 postId: true,
                 place: true,
-                object: true,
+                tag: true,
                 title: true,
                 status: true
             },
             where: {
                 OR: [
                     { place: { in: placeArr } },
-                    { object: { in: objectArr } }
+                    { tag: { in: tagArr } }
                 ],
                 AND: [
                     { postStatus: 'found' } // 분실물 '발견'. (분실물 신고 '요청' x)
@@ -80,7 +80,7 @@ router.get('/insert', authenticateAccessToken, async (req, res) => {
                     postId: postList[i].postId,
                     title: postList[i].title,
                     place: postList[i].place,
-                    object: postList[i].object,
+                    tag: postList[i].tag,
                     status: postList[i].status,
                     readStatus: '안읽음'
                 }
@@ -132,7 +132,7 @@ router.get('/', authenticateAccessToken, async (req, res) => {
                 postId: true,
                 title: true,
                 place: true,
-                object: true,
+                tag: true,
                 readStatus: true
             },
             orderBy: {
