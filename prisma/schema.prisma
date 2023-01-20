@@ -17,7 +17,7 @@ model Users {
   comment          Comment[]
   alarm            Alarm[]
   place            String?   @db.VarChar(300)
-  object           String?   @db.VarChar(300)
+  tag              String?   @db.VarChar(300)
 }
 
 model Posts {
@@ -52,7 +52,7 @@ model Alarm {
   postId     BigInt
   title      String  @db.VarChar(200)
   place      String  @db.VarChar(100)
-  object     String  @db.VarChar(30)
+  tag        String  @db.VarChar(30)
   readStatus String? @db.VarChar(20)
   status     String  @db.VarChar(20)
 }

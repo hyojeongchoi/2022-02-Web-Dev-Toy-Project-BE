@@ -11,7 +11,7 @@ CREATE TABLE `Users` (
     `googleNickname` VARCHAR(50) NULL,
     `profileImagePath` VARCHAR(200) NULL,
     `place` VARCHAR(300) NULL,
-    `object` VARCHAR(300) NULL,
+    `tag` VARCHAR(300) NULL,
 
     PRIMARY KEY (`userId`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -49,7 +49,7 @@ CREATE TABLE `Alarm` (
     `postId` BIGINT NOT NULL,
     `title` VARCHAR(200) NOT NULL,
     `place` VARCHAR(100) NOT NULL,
-    `object` VARCHAR(30) NOT NULL,
+    `tag` VARCHAR(30) NOT NULL,
     `readStatus` VARCHAR(20) NULL,
     `status` VARCHAR(20) NOT NULL,
 
