@@ -6,9 +6,12 @@ CREATE TABLE `Users` (
     `studentId` VARCHAR(10) NULL,
     `department` VARCHAR(20) NULL,
     `status` VARCHAR(10) NOT NULL,
+    `schoolEmail` VARCHAR(50) NULL,
     `googleEmail` VARCHAR(50) NULL,
     `googleNickname` VARCHAR(50) NULL,
     `profileImagePath` VARCHAR(200) NULL,
+    `place` VARCHAR(300) NULL,
+    `object` VARCHAR(300) NULL,
 
     PRIMARY KEY (`userId`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -39,8 +42,28 @@ CREATE TABLE `Comment` (
     PRIMARY KEY (`commentId`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `Alarm` (
+    `alarmId` BIGINT NOT NULL AUTO_INCREMENT,
+    `userId` BIGINT NOT NULL,
+    `postId` BIGINT NOT NULL,
+    `title` VARCHAR(200) NOT NULL,
+    `place` VARCHAR(100) NOT NULL,
+    `object` VARCHAR(30) NOT NULL,
+    `readStatus` VARCHAR(20) NULL,
+    `status` VARCHAR(20) NOT NULL,
+
+    PRIMARY KEY (`alarmId`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `Comment` ADD CONSTRAINT `Comment_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `Users`(`userId`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Comment` ADD CONSTRAINT `Comment_postId_fkey` FOREIGN KEY (`postId`) REFERENCES `Posts`(`postId`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Alarm` ADD CONSTRAINT `Alarm_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `Users`(`userId`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Alarm` ADD CONSTRAINT `Alarm_postId_fkey` FOREIGN KEY (`postId`) REFERENCES `Posts`(`postId`) ON DELETE RESTRICT ON UPDATE CASCADE;

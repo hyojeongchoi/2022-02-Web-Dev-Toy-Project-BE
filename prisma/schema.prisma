@@ -1,46 +1,63 @@
 datasource db {
-    provider = "mysql"
-    url      = env("DATABASE_URL")
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 model Users {
-    userId           BigInt    @id @default(autoincrement())
-    nickname         String?   @db.VarChar(10)
-    name             String?   @db.VarChar(10)
-    studentId        String?   @db.VarChar(10)
-    department       String?   @db.VarChar(20)
-    status           String    @db.VarChar(10)
-    googleEmail      String?   @db.VarChar(50)
-    googleNickname   String?   @db.VarChar(50)
-    profileImagePath String?   @db.VarChar(200)
-    comment          Comment[]
+  userId           BigInt    @id @default(autoincrement())
+  nickname         String?   @db.VarChar(10)
+  name             String?   @db.VarChar(10)
+  studentId        String?   @db.VarChar(10)
+  department       String?   @db.VarChar(20)
+  status           String    @db.VarChar(10)
+  schoolEmail      String?   @db.VarChar(50)
+  googleEmail      String?   @db.VarChar(50)
+  googleNickname   String?   @db.VarChar(50)
+  profileImagePath String?   @db.VarChar(200)
+  comment          Comment[]
+  alarm            Alarm[]
+  place            String?   @db.VarChar(300)
+  object           String?   @db.VarChar(300)
 }
 
 model Posts {
-    postId           BigInt    @unique @default(autoincrement())
-    userId           BigInt    
-    title            String?   @db.VarChar(200)
-    content          String    @db.VarChar(500)
-    imagePath        String?   @db.VarChar(200)
-    publishDate      DateTime  @default(now())
-    place            String    @db.VarChar(100)
-    status           String    @db.VarChar(20)
-    tag              String    @db.VarChar(100)
-    comment          Comment[]
+  postId      BigInt    @unique @default(autoincrement())
+  userId      BigInt
+  title       String?   @db.VarChar(200)
+  content     String    @db.VarChar(500)
+  imagePath   String?   @db.VarChar(200)
+  publishDate DateTime  @default(now())
+  place       String    @db.VarChar(100)
+  status      String    @db.VarChar(20)
+  tag         String    @db.VarChar(100)
+  comment     Comment[]
+  alarm       Alarm[]
 }
 
 model Comment {
-  commentId          BigInt    @id @default(autoincrement())
-  user               Users?    @relation(fields: [userId], references: [userId])
-  userId             BigInt?
-  post               Posts?    @relation(fields: [postId], references: [postId])
-  postId             BigInt?
-  content            String?   @db.VarChar(500)
-  commentDate        DateTime  @default(now())
+  commentId   BigInt   @id @default(autoincrement())
+  user        Users?   @relation(fields: [userId], references: [userId])
+  userId      BigInt?
+  post        Posts?   @relation(fields: [postId], references: [postId])
+  postId      BigInt?
+  content     String?  @db.VarChar(500)
+  commentDate DateTime @default(now())
 }
 
+model Alarm {
+  alarmId    BigInt  @id @default(autoincrement())
+  user       Users   @relation(fields: [userId], references: [userId])
+  userId     BigInt
+  post       Posts   @relation(fields: [postId], references: [postId])
+  postId     BigInt
+  title      String  @db.VarChar(200)
+  place      String  @db.VarChar(100)
+  object     String  @db.VarChar(30)
+  readStatus String? @db.VarChar(20)
+  status     String  @db.VarChar(20)
+}
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["extendedWhereUnique"]
 }

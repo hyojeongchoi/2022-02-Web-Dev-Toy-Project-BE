@@ -12,6 +12,10 @@ const { generateAccessToken } = require('../util/Jwt');
 
 const redisClient = require('../redis/Redis');
 
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+const ejs = require('ejs')
+
 
 // 로그아웃 API
 router.post('/logout', authenticateAccessToken, async (req, res) => {
@@ -128,39 +132,121 @@ router.post('/login', async (req, res) => {
 
 });
 
-// 회원가입 API
-router.post('/register', authenticateAccessToken, async (req, res) => {
+// 이메일 인증코드 생성 및 발송
+router.post('/email', authenticateAccessToken, async (req, res) => {
+  const schoolEmail = req.body.email // 학교 이메일
+  
+  // 학교 이메일인지 확인
+  const emailRegExp = new RegExp("^[a-zA-Z0-9._%+-]+@swu.ac.kr$");
+  if (!emailRegExp.test(schoolEmail)) {
+    res.status(403).send({error: 'Email is not valid'});
+  }
 
-  // 서비스 사용자 여부 확인
-  const user = await prisma.users.findUnique({
-    where: {
-      userId: req.user.id,
-    }
-  })
-
-  const nickname = req.body.nickname // 닉네임
-  const name = req.body.name // 실명
-  const studentId = req.body.studentId // 학번
-  const department = req.body.department // 학과
-
-  // DB에 저장
+  // 이메일 중복 확인
   try {
-    await prisma.users.updateMany({
+    const user = await prisma.users.findFirst({
       where: {
-        userId: req.user.id
+        schoolEmail: schoolEmail
+      }
+    });
+
+    if (user != null) { // 중복
+      res.status(403).send({error: 'Already used email.'});
+    }
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({error: 'Server Error.'});
+  }
+
+  let authCode = crypto.randomBytes(3).toString('hex'); // 해시코드
+  
+  // 발송할 ejs 준비
+  let emailTemplate;
+  ejs.renderFile('./AuthMail.ejs', { authCode: authCode }, (err, data) => {
+    if (err) {console.log(err)}
+    emailTemplate = data;
+  })
+  
+  // 발송할 메일 설정
+  const mailOptions = {
+    from: process.env.NODEMAILER_USER,
+    to: schoolEmail,
+    subject: "재학생 이메일 인증 코드",
+    html: emailTemplate,
+  };
+
+  // 발송
+  transport.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error(error);
+      res.status(500).send({error: 'Server Error.'});
+    }
+    else {
+      console.log("NODE MAILER: '" + schoolEmail + "' Success");
+
+      try {
+        // redis 저장
+        redisClient.set(schoolEmail, authCode, 'EX', 60 * 5 , async () => {
+          console.log('Redis: { ' + schoolEmail + ', ' + authCode + ' } 저장 완료')
+        })
+      } catch (err) {
+        res.status(500).send({error: 'Server Error.'});
+      }
+
+      res.send({
+        message: 'Email Sent Successfully.'
+      })
+    }
+    transport.close();
+  });
+
+});
+
+const transport = nodemailer.createTransport({
+  service: 'gmail',
+  // host: 'smtp.gmail.com',
+  // port: 587, // 보안 무시
+  // secure: false
+  auth: {
+    user: process.env.NODEMAILER_USER,
+    pass: process.env.NODEMAILER_PASS,
+  }
+});
+
+
+// 이메일 인증코드 확인 및 회원가입
+router.post('/email/code', authenticateAccessToken, async (req, res) => {
+  const schoolEmail = req.body.email // 학교 이메일
+  const authCode = req.body.code // 사용자가 보낸 인증코드
+
+  try {
+    // 인증 코드 확인
+    var storedAuthCode = await redisClient.get(schoolEmail);
+
+    if (storedAuthCode != authCode) { // 인증 실패
+      res.status(403).send({error: 'Code is not valid'});
+    }
+
+    // DB에 사용자 학교 이메일, 닉네임 저장 및 status 변경
+    const user = await prisma.users.update({
+      where: {
+        userId: Number(req.user.id)
       },
       data: {
-        nickname: nickname,
-        name: name,
-        studentId: studentId,
-        department: department,
-        status: '가입완료'
-      },
-    })
+        schoolEmail: schoolEmail,
+        nickname: '익명_' + req.user.id, // 최초 등록은 임의 설정
+        status: '인증완료'
+      }
+    });
+    // 인증코드 삭제
+    redisClient.del(schoolEmail);
+
     res.send({
       data: {
         status: user.status,
-        googleNickName: user.googleNickname
+        googleNickname: user.googleNickname,
+        profileImagePath: user.profileImagePath
       },
       message: 'Registered Successfully.'
     })
@@ -169,8 +255,51 @@ router.post('/register', authenticateAccessToken, async (req, res) => {
     console.error(err);
     res.status(500).send({error: 'Server Error.'});
   }
-    
 });
+
+// 회원가입 API
+// router.post('/register', authenticateAccessToken, async (req, res) => {
+
+//   // 서비스 사용자 여부 확인
+//   const user = await prisma.users.findUnique({
+//     where: {
+//       userId: req.user.id,
+//     }
+//   })
+
+//   const nickname = req.body.nickname // 닉네임
+//   const name = req.body.name // 실명
+//   const studentId = req.body.studentId // 학번
+//   const department = req.body.department // 학과
+
+//   // DB에 저장
+//   try {
+//     await prisma.users.updateMany({
+//       where: {
+//         userId: req.user.id
+//       },
+//       data: {
+//         nickname: nickname,
+//         name: name,
+//         studentId: studentId,
+//         department: department,
+//         status: '가입완료'
+//       },
+//     })
+//     res.send({
+//       data: {
+//         status: user.status,
+//         googleNickName: user.googleNickname
+//       },
+//       message: 'Registered Successfully.'
+//     })
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send({error: 'Server Error.'});
+//   }
+    
+// });
 
 // Access Token 재발행 API
 router.post('/token', authenticateAccessToken, (req, res) => {
