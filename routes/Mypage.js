@@ -1,7 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
+
 const { authenticateAccessToken } = require("../middlewares/Auth");
+const { nicknameOverlapCheck } = require("../util/NicknameCheck");
+
+const invalidErr = new Error("Invalid Input");
 
 //TypeError: Do not know how to serialize a BigInt 해결코드
 BigInt.prototype.toJSON = function () {
@@ -69,10 +75,11 @@ router.put("/nickname", authenticateAccessToken, async (req, res) => {
     const newNickname = req.body.newNickname;
 
     // 유효성 검사
-    if (!isValid(newNickname)) {
-      res.status(400).send({ error: "Invalid Input" });
-      throw new Error("Invalid Input");
-    }
+    isValid(newNickname).then((res) => {
+      if (!res) {
+        throw invalidErr;
+      }
+    });
 
     // DB 업데이트
     await prisma.users.update({
@@ -100,24 +107,30 @@ router.put("/nickname", authenticateAccessToken, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ errer: "Server Error." });
+
+    if (err === invalidErr) {
+      res.status(400).send({ error: "Invalid Input" });
+    } else {
+      res.status(500).send({ errer: "Server Error." });
+    }
   }
 });
 
 // 닉네임 유효성 검사 (공백, 길이)
-function isValid(newNickname) {
+async function isValid(newNickname) {
   // 공백 검사
   const blank_pattern = /^\s+|\s+$/g;
   if (newNickname.replace(blank_pattern, "") == "") {
     return false;
   }
 
-  // 길이 검사 (3 초과, 10 이하)
-  if (!newNickname || newNickname.length < 3 || newNickname.length > 10) {
+  // 길이 검사 (2 이상, 10 이하)
+  if (!newNickname || newNickname.length < 2 || newNickname.length > 10) {
     return false;
   }
 
-  return true;
+  // 중복 확인 검사
+  return await nicknameOverlapCheck(newNickname);
 }
 
 module.exports = router;
