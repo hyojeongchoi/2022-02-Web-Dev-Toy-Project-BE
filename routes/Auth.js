@@ -245,6 +245,7 @@ router.post('/email/code', authenticateAccessToken, async (req, res) => {
     res.send({
       data: {
         status: user.status,
+        nickname: user.nickname,
         googleNickname: user.googleNickname,
         profileImagePath: user.profileImagePath
       },
