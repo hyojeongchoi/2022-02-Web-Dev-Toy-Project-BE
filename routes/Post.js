@@ -89,8 +89,13 @@ router.get('/search', async(req, res) => {
         ]
       },
     })
+
     // response
-    res.send(result)
+    let resList = result;
+    resList.forEach(res => res.content = res.content.substr(0,20))
+    console.log(resList);
+
+    res.send(resList)
   }
   catch (error) {
     console.error(error);
