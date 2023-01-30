@@ -70,6 +70,40 @@ router.get('/', async (req, res) => {
 });
 
 
+// 게시글 검색 API
+// 권한 없어도 검색은 가능
+router.get('/search', async(req, res) => {
+  const keyword = req.query.q;
+
+  try {
+    const result = await prisma.posts.findMany({
+      select: {
+        postId: true,
+        title: true,
+        content: true
+      },
+      where: {
+        OR: [
+          { title: { contains: keyword } },
+          { content: { contains: keyword } },
+        ]
+      },
+    })
+
+    // response
+    let resList = result;
+    resList.forEach(res => res.content = res.content.substr(0,20))
+    console.log(resList);
+
+    res.send(resList)
+  }
+  catch (error) {
+    console.error(error);
+    res.status(500).send({ error:'Server Error.' });
+  }
+});
+
+
 // 게시글 상세페이지 조회 API
 router.get('/:id', async (req, res) => {
   try{
@@ -187,5 +221,6 @@ async function prismaUpdate(postId, req, res){
     res.status(500).send({ error:'Server Error.' });
   }
 }
+
 
 module.exports = router;
