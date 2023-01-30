@@ -15,12 +15,14 @@ const Post = require("./routes/Post");
 const Comment = require("./routes/Comment");
 const Alarm = require("./routes/Alarm");
 const Mypage = require("./routes/Mypage");
+const CommentAlarm = require("./routes/CommentAlarm");
 
 app.use("/auth/user", Auth);
 app.use("/post", Post);
 app.use("/:id/comment", Comment);
 app.use("/alarm", Alarm);
 app.use("/mypage", Mypage);
+app.use("/comment/alarm", CommentAlarm)
 
 const PORT = 8081;
 app.listen(PORT, () => {
