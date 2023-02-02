@@ -16,6 +16,8 @@ model Users {
   profileImagePath String?   @db.VarChar(200)
   comment          Comment[]
   alarm            Alarm[]
+  cAlarm           comment_alarm[]
+  cAlarmOff        comment_alarmoff[]
   place            String?   @db.VarChar(300)
   tag              String?   @db.VarChar(300)
 }
@@ -30,8 +32,11 @@ model Posts {
   place       String    @db.VarChar(100)
   status      String    @db.VarChar(20)
   tag         String    @db.VarChar(100)
+  postStatus  String    @db.VarChar(20)
   comment     Comment[]
   alarm       Alarm[]
+  cAlarmOff   comment_alarmoff[]
+  cAlarm      comment_alarm[]
 }
 
 model Comment {
@@ -42,6 +47,7 @@ model Comment {
   postId      BigInt?
   content     String?  @db.VarChar(500)
   commentDate DateTime @default(now())
+  cAlarm      comment_alarm[]
 }
 
 model Alarm {
@@ -55,6 +61,27 @@ model Alarm {
   tag        String  @db.VarChar(30)
   readStatus String? @db.VarChar(20)
   status     String  @db.VarChar(20)
+}
+
+model comment_alarm {
+  cAlarmId   BigInt  @id @default(autoincrement())
+  user       Users   @relation(fields: [userId], references: [userId])
+  userId     BigInt
+  comment    Comment @relation(fields: [commentId], references: [commentId])
+  commentId  BigInt  
+  post       Posts   @relation(fields: [postId], references: [postId])
+  postId     BigInt
+  uniqueId   String  @unique
+  content    String  @db.VarChar(500)
+  readStatus String  @db.VarChar(20)
+}
+
+model comment_alarmoff {
+  cAlarmOffId  BigInt @id @default(autoincrement())
+  user         Users  @relation(fields: [userId], references: [userId])
+  userId       BigInt
+  post         Posts  @relation(fields: [postId], references: [postId])
+  postId       BigInt
 }
 
 generator client {
