@@ -34,9 +34,33 @@ router.post('/setting', authenticateAccessToken, async (req, res) => {
     }
 });
 
+//게시물 읽음처리 API
+router.post('/:id/status', authenticateAccessToken, async (req, res) => {
+    try {
+        // 알람을 읽었는지 확인하는 것이기에, 알림id를 받아오는 것으로 수정
+        // + prisma update를 쓰려면 unique한 칼럼으로 조회해야함
+        //const userId = Number(req.user.id);
+        const alarmId = Number(req.params.id);
 
-// 조건에 맞는 최신 10개 게시글 alarm 테이블에 입력
-router.get('/insert', authenticateAccessToken, async (req, res) => {
+        await prisma.alarm.update({
+            where: {
+                //userId: userId,
+                alarmId: alarmId
+            },
+            data: {
+                readStatus: '읽음'
+            }
+        });
+        res.send({ message: 'Updated Successfully.' });
+    } catch (error) {
+        console.error(error)
+        res.status(500).send({ error: 'Server Error.' });
+    }
+})
+
+
+//alarm 테이블에서 사용자에 따라 출력
+router.get('/', authenticateAccessToken, async (req, res) => {
     try {
         const userId = Number(req.user.id);
         const user = await prisma.users.findUnique({
@@ -46,7 +70,7 @@ router.get('/insert', authenticateAccessToken, async (req, res) => {
         });
 
         const placeArr = JSON.parse(user.place);    //배열 자료형으로 변환
-        const tagArr = JSON.parse(user.tag);  // ''
+        const tagArr = JSON.parse(user.tag);  
 
         //posts 테이블에서 placeList 값 또는 tagList 값이 속하는 것 10개
         const postList = await prisma.posts.findMany({
@@ -86,44 +110,7 @@ router.get('/insert', authenticateAccessToken, async (req, res) => {
                 }
             });
         };
-        res.send({ message: 'Saved Successfully.' });
-    }
-    catch (error) {
-        console.error(error);
-        res.status(500).send({ error: 'Server Error.' });
-    }
-})
 
-
-//게시물 읽음처리 API
-router.post('/:id/status', authenticateAccessToken, async (req, res) => {
-    try {
-        // 알람을 읽었는지 확인하는 것이기에, 알림id를 받아오는 것으로 수정
-        // + prisma update를 쓰려면 unique한 칼럼으로 조회해야함
-        //const userId = Number(req.user.id);
-        const alarmId = Number(req.params.id);
-
-        await prisma.alarm.update({
-            where: {
-                //userId: userId,
-                alarmId: alarmId
-            },
-            data: {
-                readStatus: '읽음'
-            }
-        });
-        res.send({ message: 'Updated Successfully.' });
-    } catch (error) {
-        console.error(error)
-        res.status(500).send({ error: 'Server Error.' });
-    }
-})
-
-
-//alarm 테이블에서 사용자에 따라 출력
-router.get('/', authenticateAccessToken, async (req, res) => {
-    try {
-        const userId = Number(req.user.id);
         const alarmList = await prisma.alarm.findMany({
             where: {
                 userId: userId
