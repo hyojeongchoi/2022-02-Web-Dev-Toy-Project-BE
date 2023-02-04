@@ -57,6 +57,7 @@ router.get('/', async (req, res) => {
     const postList = await prisma.posts.findMany({
       select: {
         postId: true,
+        place : true,
         title: true,
         publishDate: true,
         status: true,
