@@ -25,7 +25,7 @@ router.post('/', authenticateAccessToken, multer.single('file'), uploadImage, as
     const tag = json.tag
     const postStatus = json.postStatus
 
-    await prisma.posts.create({
+    const post = await prisma.posts.create({
       data:{
         userId: userId,
         title: title, 
@@ -37,8 +37,11 @@ router.post('/', authenticateAccessToken, multer.single('file'), uploadImage, as
         tag: tag,
         postStatus: postStatus
       },
+      select: {
+        postId: true
+      }
     })
-    res.send({message:'Saved Successfully.'})
+    res.send(post)
   } catch (error) {
     console.error(error);
     res.status(500).send({error: 'Server Error.'});
