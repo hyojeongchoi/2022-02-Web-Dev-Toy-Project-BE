@@ -25,6 +25,7 @@ CREATE TABLE `Posts` (
     `imagePath` VARCHAR(200) NULL,
     `publishDate` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `place` VARCHAR(100) NOT NULL,
+    `placeDetail` VARCHAR(100) NOT NULL,
     `status` VARCHAR(20) NOT NULL,
     `tag` VARCHAR(100) NOT NULL,
     `postStatus` VARCHAR(20) NOT NULL,
