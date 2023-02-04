@@ -21,6 +21,7 @@ router.post('/', authenticateAccessToken, multer.single('file'), uploadImage, as
     const image = req.image
     // const publishDate = req.body.publishDate // BE에서 처리해야 함
     const place = json.place
+    const placeDetail = json.placeDetail
     const status = json.status
     const tag = json.tag
     const postStatus = json.postStatus
@@ -33,6 +34,7 @@ router.post('/', authenticateAccessToken, multer.single('file'), uploadImage, as
         imagePath: image, 
         // publishDate : publishDate,
         place: place,
+        placeDetail: placeDetail,
         status: status,
         tag: tag,
         postStatus: postStatus
@@ -137,6 +139,7 @@ router.put('/:id', authenticateAccessToken, multer.single('file'), uploadImage, 
     const title = json.title
     const content = json.content
     const place = json.place
+    const placeDetail = json.placeDetail
     const status = json.status
     const image = req.image
     const tag = json.tag
@@ -164,6 +167,7 @@ router.put('/:id', authenticateAccessToken, multer.single('file'), uploadImage, 
           content: content,
           imagePath: image,
           place: place,
+          placeDetail: placeDetail,
           status: status,
           tag: tag,
           postStatus: postStatus

@@ -30,6 +30,7 @@ model Posts {
   imagePath   String?   @db.VarChar(200)
   publishDate DateTime  @default(now())
   place       String    @db.VarChar(100)
+  placeDetail String    @db.VarChar(100)
   status      String    @db.VarChar(20)
   tag         String    @db.VarChar(100)
   postStatus  String    @db.VarChar(20)
