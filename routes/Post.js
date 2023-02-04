@@ -132,6 +132,15 @@ router.get('/:id', async (req, res) => {
 // 게시글 수정 API
 router.put('/:id', authenticateAccessToken, multer.single('file'), uploadImage, async(req, res) => {
   try {
+    const json = JSON.parse(req.body.json);
+    const userId = Number(req.user.id)
+    const title = json.title
+    const content = json.content
+    const place = json.place
+    const status = json.status
+    const image = req.image
+    const tag = json.tag
+    const postStatus = json.postStatus
     const postId = Number(req.params.id)
     const post = await prisma.posts.findUnique({
       where: {
@@ -140,13 +149,35 @@ router.put('/:id', authenticateAccessToken, multer.single('file'), uploadImage, 
     });
     const beforeImg = post.imagePath;
 
-    // 게시글 수정
-    prismaUpdate(postId, req, res);
-    // 이미지 교체 OR 삭제
-    if ((req.file == undefined) == (req.image == null)) {
-        deleteFile(beforeImg);
+    if (req.image == undefined) {
+      req.image = null;
     }
-    res.send({message:'Updated Successfully.'})
+
+    // 게시글 수정
+    if (post.userId == userId) { // 게시글 작성자인지 확인
+      await prisma.posts.update({
+        where: {
+          postId: postId,
+        },
+        data: {
+          title: title,
+          content: content,
+          imagePath: image,
+          place: place,
+          status: status,
+          tag: tag,
+          postStatus: postStatus
+        }
+      });
+    // 이미지 교체 OR 삭제
+      if ((req.file == undefined) == (req.image == null)) {
+        deleteFile(beforeImg);
+      }
+      res.send({ message: 'Updated Successfully.' })
+    }
+    else {
+      res.status(403).send({ error: 'Authentication fail.' })
+    }
   }
   catch(err) {
     console.error(err);
@@ -182,54 +213,5 @@ router.delete('/:id', authenticateAccessToken, async(req, res) => {
     res.status(500).send({error:'Server Error.'});
   }
 });
-
-// 게시글 업데이트 함수
-async function prismaUpdate(postId, req, res){
-  const json = JSON.parse(req.body.json);
-  if (req.image == undefined) {
-    req.image = null;
-  }
-
-  try {
-    const userId = Number(req.user.id)
-    const title = json.title
-    const content = json.content
-    const place = json.place
-    const status = json.status
-    const image = req.image
-    const tag = json.tag
-    const postStatus = json.postStatus
-    const postRes = await prisma.posts.findUnique({
-      where: {
-        postId: postId
-      }
-    });
-    if (postRes.userId == userId) { // 게시글 작성자인지 확인
-      await prisma.posts.update({
-        where: {
-          postId: postId,
-        },
-        data: {
-          title: title,
-          content: content,
-          imagePath: image,
-          place: place,
-          status: status,
-          tag: tag,
-          postStatus: postStatus
-        }
-      });
-      res.send({ message: 'Updated Successfully.' })
-    }
-    else {
-      res.status(403).send({ error: 'Authentication fail.' })
-    }
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({ error:'Server Error.' });
-  }
-}
-
 
 module.exports = router;
