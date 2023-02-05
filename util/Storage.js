@@ -9,7 +9,10 @@ const { v4: uuidv4 } = require('uuid');
 // 이미지 업로드 & URL 반환하는 함수
 function uploadImage(req, res, next) {
   // file이 존재해야만 업로드
-  if(req.file != undefined){
+  if(req.body.file != ''){
+    // '' -> 파일 없음
+    // undefined -> 초기화 전
+    // 따라서 undefined 여부로 분기하면 안됨 
     const fileExtension = req.file.originalname.split('.').pop();
     const fileName = uuidv4(); // uuid4
     const filePath = `posts/test/${fileName}.${fileExtension}`;
@@ -19,7 +22,7 @@ function uploadImage(req, res, next) {
     });
       
     blobStream.on('error', err => {
-        next(err);
+      return res.status(502).send({ error: err })
     });
   
     blobStream.on('finish', () => {
@@ -30,7 +33,10 @@ function uploadImage(req, res, next) {
   
     blobStream.end(req.file.buffer);
   }
-  next();
+  else {
+    next();
+  }
+  // 초기화 전(undefined) 상태에서 무조건적인 next 금지
 };
 
 // GCP Storage 파일 삭제하는 함수 -> 삭제 딜레이 2-30분 있는지 확인하기
