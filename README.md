@@ -25,8 +25,8 @@
 <br/>
 
 ## 팀원
-| Frontend | Frontend | Frontend |
-| :-----: | :-----: | :------: |
+| Backend | Backend | 
+| :-----: | :-----: | 
 |[최효정](https://github.com/hyojeongchoi)|[최다은](https://github.com/yyyujinnn)|
 <br/>
 
